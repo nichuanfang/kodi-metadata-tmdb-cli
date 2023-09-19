@@ -6,6 +6,7 @@ import (
 	"fengqi/kodi-metadata-tmdb-cli/utils"
 	"sort"
 	"strconv"
+	"strings"
 )
 
 type SearchTvResponse struct {
@@ -53,12 +54,24 @@ func (rw SearchTvResultsSortWrapper) Less(i, j int) bool {
 	return rw.by(rw.results[i], rw.results[j])
 }
 
+func swap(s []*SearchResults, i, j int) {
+	s[i], s[j] = s[j], s[i]
+}
+
 // SortResults 按流行度排序
 // TODO 是否有点太粗暴了，考虑多维度：内容完整性、年份、中英文等
-func (d SearchTvResponse) SortResults() {
+func (d SearchTvResponse) SortResults(year string) {
+	// 考虑年份 年份对的优先级拉高
 	sort.Sort(SearchTvResultsSortWrapper{d.Results, func(l, r *SearchResults) bool {
 		return l.Popularity > r.Popularity
 	}})
+	for i := 0; i < len(d.Results); i++ {
+		firstAirDate := d.Results[i].FirstAirDate
+		if strings.Split(firstAirDate, "-")[0] == year {
+			swap(d.Results, 0, i)
+			break
+		}
+	}
 }
 
 // SearchShows 搜索tmdb
@@ -119,7 +132,7 @@ func (t *tmdb) SearchShows(chsTitle, engTitle string, year int) (*SearchResults,
 		}
 
 		if len(tvResp.Results) > 0 {
-			tvResp.SortResults()
+			tvResp.SortResults(strYear)
 			utils.Logger.InfoF("search tv: %s %d result count: %d, use: %v", chsTitle, year, len(tvResp.Results), tvResp.Results[0])
 			return tvResp.Results[0], nil
 		}
