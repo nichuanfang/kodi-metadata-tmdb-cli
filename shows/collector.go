@@ -12,6 +12,7 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 )
 
@@ -22,7 +23,8 @@ type Collector struct {
 
 var collector *Collector
 
-func RunCollector(config *config.Config) {
+func RunCollector(config *config.Config, wg *sync.WaitGroup) {
+	defer wg.Done()
 	collector = &Collector{
 		config:  config,
 		dirChan: make(chan *Dir, 100),

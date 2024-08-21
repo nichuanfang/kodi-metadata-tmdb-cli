@@ -8,6 +8,7 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
+	"sync"
 	"time"
 )
 
@@ -18,7 +19,8 @@ type Collector struct {
 
 var collector *Collector
 
-func RunCollector(config *config.Config) {
+func RunCollector(config *config.Config, wg *sync.WaitGroup) {
+	defer wg.Done()
 	collector = &Collector{
 		config:  config,
 		channel: make(chan *MusicVideo, runtime.NumCPU()),

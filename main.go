@@ -42,8 +42,11 @@ func main() {
 
 	wg := &sync.WaitGroup{}
 	wg.Add(3)
-	go shows.RunCollector(c)
-	go movies.RunCollector(c)
-	go music_videos.RunCollector(c)
+	// 刮削电影
+	go movies.RunCollector(c, wg)
+	//刮削剧集
+	go shows.RunCollector(c, wg)
+	// 刮削音乐剧
+	go music_videos.RunCollector(c, wg)
 	wg.Wait()
 }

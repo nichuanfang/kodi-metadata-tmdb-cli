@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"fengqi/kodi-metadata-tmdb-cli/tmdb"
 	"fengqi/kodi-metadata-tmdb-cli/utils"
-	"io/ioutil"
+	"io/fs"
 	"os"
 	"strconv"
 	"strings"
@@ -24,7 +24,7 @@ func (d *Movie) getMovieDetail() (*tmdb.MovieDetail, error) {
 	if cf, err := os.Stat(cacheFile); err == nil {
 		utils.Logger.DebugF("get movie detail from cache: %s", cacheFile)
 
-		bytes, err := ioutil.ReadFile(cacheFile)
+		bytes, err := os.ReadFile(cacheFile)
 		if err != nil {
 			utils.Logger.WarningF("read movie.json cache: %s err: %v", cacheFile, err)
 		}
@@ -40,7 +40,7 @@ func (d *Movie) getMovieDetail() (*tmdb.MovieDetail, error) {
 	}
 
 	// 缓存失效，重新搜索
-	if detail == nil || detail.Id == 0 || cacheExpire {
+	if detail.Id == 0 || cacheExpire {
 		detail.FromCache = false
 		movieId := detail.Id
 		idFile := d.GetCacheDir() + "/id.txt"
@@ -48,7 +48,7 @@ func (d *Movie) getMovieDetail() (*tmdb.MovieDetail, error) {
 			idFile = d.Dir + "/tmdb/" + d.OriginTitle + ".id.txt"
 		}
 		if _, err = os.Stat(idFile); err == nil {
-			bytes, err := ioutil.ReadFile(idFile)
+			bytes, err := os.ReadFile(idFile)
 			if err != nil {
 				utils.Logger.WarningF("id file: %s read err: %v", idFile, err)
 			} else {
@@ -66,7 +66,7 @@ func (d *Movie) getMovieDetail() (*tmdb.MovieDetail, error) {
 			movieId = SearchResults.Id
 
 			// 保存movieId
-			err = ioutil.WriteFile(idFile, []byte(strconv.Itoa(movieId)), 0664)
+			err = os.WriteFile(idFile, []byte(strconv.Itoa(movieId)), fs.FileMode(0664))
 			if err != nil {
 				utils.Logger.ErrorF("save movieId %d to %s err: %v", movieId, idFile, err)
 			}

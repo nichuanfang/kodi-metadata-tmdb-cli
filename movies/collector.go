@@ -7,12 +7,14 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"sync"
 	"time"
 )
 
 var collector *Collector
 
-func RunCollector(config *config.Config) {
+func RunCollector(config *config.Config, wg *sync.WaitGroup) {
+	defer wg.Done()
 	collector = &Collector{
 		config:  config,
 		channel: make(chan *Movie, 100),
