@@ -26,7 +26,7 @@ func (x *XBMC) GetInfoBooleans(booleans []string) map[string]bool {
 		return nil
 	}
 
-	if resp != nil && resp.Result != nil {
+	if resp.Result != nil {
 		jsonBytes, _ := json.Marshal(resp.Result)
 		info := make(map[string]bool, 0)
 		_ = json.Unmarshal(jsonBytes, &info)

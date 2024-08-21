@@ -39,11 +39,14 @@ type TmdbConfig struct {
 }
 
 type CollectorConfig struct {
-	Watcher        bool     `json:"watcher"`          // 是否开启文件监听，比定时扫描及时
-	CronSeconds    int      `json:"cron_seconds"`     // 定时扫描频率
-	SkipFolders    []string `json:"skip_folders"`     // 跳过的目录，可多个
-	MoviesNfoMode  int      `json:"movies_nfo_mode"`  // 电影NFO写入模式：1 movie.nfo，2 <VideoFileName>.nfo
-	MoviesDir      []string `json:"movies_dir"`       // 电影文件根目录，可多个
-	ShowsDir       []string `json:"shows_dir"`        // 电视剧文件根目录，可多个
-	MusicVideosDir []string `json:"music_videos_dir"` // 音乐视频文件根目录，可多个
+	Watcher               bool     `json:"watcher"`                  // 是否开启文件监听，比定时扫描及时
+	CronSeconds           int      `json:"cron_seconds"`             // 定时扫描频率
+	SkipFolders           []string `json:"skip_folders"`             // 跳过的目录，可多个
+	MoviesNfoMode         int      `json:"movies_nfo_mode"`          // 电影NFO写入模式：1 movie.nfo，2 <VideoFileName>.nfo
+	MoviesDir             []string `json:"movies_dir"`               // 需要监听的电影文件根目录，可多个
+	MoviesStorageDir      string   `json:"movies_storage_dir"`       //刮削后实际存放电影的文件夹, 仅为一个
+	ShowsDir              []string `json:"shows_dir"`                // 需要监听的电视剧文件根目录，可多个
+	ShowsStorageDir       string   `json:"shows_storage_dir"`        //刮削后实际存放电视剧的文件夹, 仅为一个
+	MusicVideosDir        []string `json:"music_videos_dir"`         //需要监听的音乐视频文件根目录，可多个
+	MusicStorageVideosDir string   `json:"music_videos_storage_dir"` //刮削后实际存放电视剧的文件夹, 仅为一个
 }

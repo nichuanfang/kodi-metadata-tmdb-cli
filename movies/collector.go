@@ -47,6 +47,8 @@ func (c *Collector) runMoviesProcess() {
 			}
 
 			_ = dir.downloadImage(detail)
+			// 移动到正式文件夹
+
 		}
 	}
 }

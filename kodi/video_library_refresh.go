@@ -39,7 +39,7 @@ func (r *JsonRpc) ConsumerRefreshTask() {
 			continue
 		}
 
-		for queue, _ := range r.refreshQueue {
+		for queue := range r.refreshQueue {
 			_task, _ := strconv.Atoi(queue[0:2])
 			task := TaskRefresh(_task)
 

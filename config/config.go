@@ -3,11 +3,11 @@ package config
 import (
 	"encoding/json"
 	"fengqi/kodi-metadata-tmdb-cli/utils"
-	"io/ioutil"
+	"os"
 )
 
 func LoadConfig(file string) *Config {
-	bytes, err := ioutil.ReadFile(file)
+	bytes, err := os.ReadFile(file)
 	if err != nil {
 		utils.Logger.FatalF("load config err: %v", err)
 	}

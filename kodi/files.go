@@ -23,7 +23,7 @@ func (f *Files) GetSources(media string) []*FileSource {
 		return nil
 	}
 
-	if resp != nil && resp.Result != nil {
+	if resp.Result != nil {
 		jsonBytes, _ := json.Marshal(resp.Result)
 		sourcesResp := &GetSourcesResponse{}
 		err = json.Unmarshal(jsonBytes, sourcesResp)

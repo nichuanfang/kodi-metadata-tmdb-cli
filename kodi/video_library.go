@@ -37,7 +37,7 @@ func (vl *VideoLibrary) GetMovies(req *GetMoviesRequest) *GetMoviesResponse {
 		return nil
 	}
 
-	if resp != nil && resp.Result != nil {
+	if resp.Result != nil {
 		jsonBytes, _ := json.Marshal(resp.Result)
 
 		moviesResp := &GetMoviesResponse{}
@@ -87,7 +87,7 @@ func (vl *VideoLibrary) GetTVShowsByField(field, operator, value string) *GetTVS
 
 	resp := &JsonRpcResponse{}
 	_ = json.Unmarshal(body, resp)
-	if resp != nil && resp.Result != nil {
+	if resp.Result != nil {
 		jsonBytes, _ := json.Marshal(resp.Result)
 
 		moviesResp := &GetTVShowsResponse{}
@@ -112,7 +112,7 @@ func (vl *VideoLibrary) GetTVShows(req *GetTVShowsRequest) *GetTVShowsResponse {
 		panic(err)
 	}
 
-	if resp != nil && resp.Result != nil {
+	if resp.Result != nil {
 		jsonBytes, _ := json.Marshal(resp.Result)
 
 		moviesResp := &GetTVShowsResponse{}

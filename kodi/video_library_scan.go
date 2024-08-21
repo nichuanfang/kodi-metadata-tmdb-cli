@@ -51,7 +51,7 @@ func (r *JsonRpc) ConsumerScanTask() {
 			continue
 		}
 
-		for directory, _ := range r.scanQueue {
+		for directory := range r.scanQueue {
 			r.scanLock.Lock()
 
 			r.VideoLibrary.Scan(directory, true)
