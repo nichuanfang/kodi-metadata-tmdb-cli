@@ -7,7 +7,6 @@ import (
 	"fengqi/kodi-metadata-tmdb-cli/utils"
 	"fmt"
 	"io/fs"
-	"io/ioutil"
 	"os"
 	"sort"
 	"strconv"
@@ -233,7 +232,21 @@ func (c *Collector) scanDir(dir string) ([]*Dir, error) {
 
 // ScanMovieFile 扫描可以确定的单个电影、电视机目录，返回其中的视频文件信息
 func (c *Collector) scanShowsFile(d *Dir) (map[string]*File, error) {
-	fileInfo, err := ioutil.ReadDir(d.Dir + "/" + d.OriginTitle)
+	fileInfo, err := func() ([]fs.FileInfo, error) {
+		f, err := os.Open(d.Dir + "/" + d.OriginTitle)
+		if err != nil {
+			return nil, err
+		}
+		list, err := f.Readdir(-1)
+		f.Close()
+		if err != nil {
+			return nil, err
+		}
+		sort.Slice(list, func(i, j int) bool {
+			return list[i].Name() < list[j].Name()
+		})
+		return list, nil
+	}()
 	if err != nil {
 		return nil, err
 	}

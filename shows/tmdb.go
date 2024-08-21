@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fengqi/kodi-metadata-tmdb-cli/tmdb"
 	"fengqi/kodi-metadata-tmdb-cli/utils"
-	"io/ioutil"
 	"os"
 	"time"
 )
@@ -43,7 +42,7 @@ func (d *Dir) getTvDetail() (*tmdb.TvDetail, error) {
 
 search:
 	// 缓存失效，重新搜索
-	if detail == nil || detail.Id == 0 || cacheExpire {
+	if detail.Id == 0 || cacheExpire {
 		detail.FromCache = false
 		if d.TvId == 0 {
 			SearchResults, err := tmdb.Api.SearchShows(d.ChsTitle, d.EngTitle, d.Year)
@@ -87,7 +86,7 @@ func (f *File) getTvEpisodeDetail() (*tmdb.TvEpisodeDetail, error) {
 	if cf, err := os.Stat(cacheFile); err == nil {
 		utils.Logger.DebugF("get episode from cache: %s", cacheFile)
 
-		bytes, err := ioutil.ReadFile(cacheFile)
+		bytes, err := os.ReadFile(cacheFile)
 		if err != nil {
 			utils.Logger.WarningF("read episode cache: %s err: %v", cacheFile, err)
 		}
@@ -141,7 +140,7 @@ func (d *Dir) getTvEpisodeGroupDetail() (*tmdb.TvEpisodeGroupDetail, error) {
 	if cf, err := os.Stat(cacheFile); err == nil {
 		utils.Logger.DebugF("get tv episode group detail from cache: %s", cacheFile)
 
-		bytes, err := ioutil.ReadFile(cacheFile)
+		bytes, err := os.ReadFile(cacheFile)
 		if err != nil {
 			utils.Logger.WarningF("read group.json cache: %s err: %v", cacheFile, err)
 		}
@@ -157,7 +156,7 @@ func (d *Dir) getTvEpisodeGroupDetail() (*tmdb.TvEpisodeGroupDetail, error) {
 	}
 
 	// 缓存失效，重新搜索
-	if detail == nil || detail.Id == "" || cacheExpire {
+	if detail.Id == "" || cacheExpire {
 		detail.FromCache = false
 		detail, err = tmdb.Api.GetTvEpisodeGroupDetail(d.GroupId)
 		if err != nil {

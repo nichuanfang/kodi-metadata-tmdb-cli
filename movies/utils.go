@@ -4,7 +4,6 @@ import (
 	"fengqi/kodi-metadata-tmdb-cli/tmdb"
 	"fengqi/kodi-metadata-tmdb-cli/utils"
 	"io/fs"
-	"io/ioutil"
 	"os"
 	"sort"
 	"strconv"
@@ -101,7 +100,7 @@ func parseMoviesDir(baseDir string, file fs.FileInfo) *Movie {
 		idFile = baseDir + "/tmdb/" + movieName + ".id.txt"
 	}
 	if _, err := os.Stat(idFile); err == nil {
-		bytes, err := ioutil.ReadFile(idFile)
+		bytes, err := os.ReadFile(idFile)
 		if err == nil {
 			movieDir.MovieId, _ = strconv.Atoi(strings.Trim(string(bytes), "\r\n "))
 		} else {
@@ -111,7 +110,21 @@ func parseMoviesDir(baseDir string, file fs.FileInfo) *Movie {
 
 	//识别是否时蓝光或dvd目录
 	if file.IsDir() {
-		fileInfo, err := ioutil.ReadDir(baseDir + "/" + file.Name())
+		fileInfo, err := func() ([]fs.FileInfo, error) {
+			f, err := os.Open(baseDir + "/" + file.Name())
+			if err != nil {
+				return nil, err
+			}
+			list, err := f.Readdir(-1)
+			f.Close()
+			if err != nil {
+				return nil, err
+			}
+			sort.Slice(list, func(i, j int) bool {
+				return list[i].Name() < list[j].Name()
+			})
+			return list, nil
+		}()
 		if err == nil {
 			audioTs := false
 			videoTs := false

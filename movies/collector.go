@@ -4,9 +4,10 @@ import (
 	"fengqi/kodi-metadata-tmdb-cli/config"
 	"fengqi/kodi-metadata-tmdb-cli/kodi"
 	"fengqi/kodi-metadata-tmdb-cli/utils"
-	"io/ioutil"
+	"io/fs"
 	"os"
 	"path/filepath"
+	"sort"
 	"sync"
 	"time"
 )
@@ -96,7 +97,21 @@ func (c *Collector) scanDir(dir string) ([]*Movie, error) {
 		return movieDirs, nil
 	}
 
-	fileInfo, err := ioutil.ReadDir(dir)
+	fileInfo, err := func() ([]fs.FileInfo, error) {
+		f, err := os.Open(dir)
+		if err != nil {
+			return nil, err
+		}
+		list, err := f.Readdir(-1)
+		f.Close()
+		if err != nil {
+			return nil, err
+		}
+		sort.Slice(list, func(i, j int) bool {
+			return list[i].Name() < list[j].Name()
+		})
+		return list, nil
+	}()
 	if err != nil {
 		utils.Logger.ErrorF("scan dir: %s err: %v", dir, err)
 		return nil, err
@@ -137,7 +152,21 @@ func (c *Collector) skipFolders(path, filename string) bool {
 
 func (c *Collector) listFilesAndFolders(path string) []os.FileInfo {
 	list := make([]os.FileInfo, 0)
-	pathInfo, err := ioutil.ReadDir(path)
+	pathInfo, err := func() ([]fs.FileInfo, error) {
+		f, err := os.Open(path)
+		if err != nil {
+			return nil, err
+		}
+		list, err := f.Readdir(-1)
+		f.Close()
+		if err != nil {
+			return nil, err
+		}
+		sort.Slice(list, func(i, j int) bool {
+			return list[i].Name() < list[j].Name()
+		})
+		return list, nil
+	}()
 	if err != nil {
 		return list
 	}

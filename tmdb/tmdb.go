@@ -6,7 +6,6 @@ import (
 	"fengqi/kodi-metadata-tmdb-cli/utils"
 	"golang.org/x/net/proxy"
 	"io"
-	"io/ioutil"
 	"net"
 	"net/http"
 	"net/url"
@@ -77,7 +76,7 @@ func (t *tmdb) request(api string, args map[string]string) ([]byte, error) {
 		}
 	}(resp.Body)
 
-	return ioutil.ReadAll(resp.Body)
+	return io.ReadAll(io.Reader(resp.Body))
 }
 
 // DownloadFile 下载文件, 提供网址和目的地

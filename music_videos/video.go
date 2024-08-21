@@ -7,7 +7,6 @@ import (
 	"fengqi/kodi-metadata-tmdb-cli/utils"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"os"
 )
 
@@ -50,7 +49,7 @@ func (m *MusicVideo) getProbe() (*ffmpeg.ProbeData, error) {
 	cacheFile := m.BaseDir + "/tmdb/" + fileMd5 + ".json"
 	if _, err := os.Stat(cacheFile); err == nil {
 		utils.Logger.DebugF("get video probe from cache: %s", cacheFile)
-		if bytes, err := ioutil.ReadFile(cacheFile); err == nil {
+		if bytes, err := os.ReadFile(cacheFile); err == nil {
 			if err = json.Unmarshal(bytes, probe); err == nil {
 				return probe, nil
 			}

@@ -4,10 +4,11 @@ import (
 	"fengqi/kodi-metadata-tmdb-cli/config"
 	"fengqi/kodi-metadata-tmdb-cli/kodi"
 	"fengqi/kodi-metadata-tmdb-cli/utils"
-	"io/ioutil"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"runtime"
+	"sort"
 	"sync"
 	"time"
 )
@@ -123,7 +124,21 @@ func (c *Collector) runScanner() {
 
 func (c *Collector) scanDir(dir string) ([]*MusicVideo, error) {
 	videos := make([]*MusicVideo, 0)
-	dirInfo, err := ioutil.ReadDir(dir)
+	dirInfo, err := func() ([]fs.FileInfo, error) {
+		f, err := os.Open(dir)
+		if err != nil {
+			return nil, err
+		}
+		list, err := f.Readdir(-1)
+		f.Close()
+		if err != nil {
+			return nil, err
+		}
+		sort.Slice(list, func(i, j int) bool {
+			return list[i].Name() < list[j].Name()
+		})
+		return list, nil
+	}()
 	if err != nil {
 		utils.Logger.WarningF("scanDir %s err: %v", dir, err)
 		return nil, err
