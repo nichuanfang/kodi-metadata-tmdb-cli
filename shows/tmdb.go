@@ -5,6 +5,7 @@ import (
 	"fengqi/kodi-metadata-tmdb-cli/tmdb"
 	"fengqi/kodi-metadata-tmdb-cli/utils"
 	"os"
+	"path/filepath"
 	"time"
 )
 
@@ -16,7 +17,7 @@ func (d *Dir) getTvDetail() (*tmdb.TvDetail, error) {
 	d.ReadTvId()
 
 	// 从缓存读取
-	tvCacheFile := d.GetCacheDir() + "/tv.json"
+	tvCacheFile := filepath.Join(d.GetCacheDir(), "tv.json")
 	cacheExpire := false
 	if cf, err := os.Stat(tvCacheFile); err == nil {
 		utils.Logger.DebugF("get tv detail from cache: %s", tvCacheFile)
@@ -81,7 +82,7 @@ func (f *File) getTvEpisodeDetail() (*tmdb.TvEpisodeDetail, error) {
 	var err error
 	var detail = new(tmdb.TvEpisodeDetail)
 
-	cacheFile := f.getCacheDir() + "/" + f.SeasonEpisode + ".json"
+	cacheFile := filepath.Join(f.getCacheDir(), f.SeasonEpisode+".json")
 	cacheExpire := false
 	if cf, err := os.Stat(cacheFile); err == nil {
 		utils.Logger.DebugF("get episode from cache: %s", cacheFile)
@@ -135,7 +136,7 @@ func (d *Dir) getTvEpisodeGroupDetail() (*tmdb.TvEpisodeGroupDetail, error) {
 	var detail = new(tmdb.TvEpisodeGroupDetail)
 
 	// 从缓存读取
-	cacheFile := d.GetCacheDir() + "/group.json"
+	cacheFile := filepath.Join(d.GetCacheDir(), "group.json")
 	cacheExpire := false
 	if cf, err := os.Stat(cacheFile); err == nil {
 		utils.Logger.DebugF("get tv episode group detail from cache: %s", cacheFile)

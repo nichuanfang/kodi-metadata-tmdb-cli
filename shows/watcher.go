@@ -32,7 +32,6 @@ func (c *Collector) runWatcher() {
 			if !ok {
 				continue
 			}
-
 			fileInfo, err := os.Stat(event.Name)
 			if fileInfo == nil || err != nil {
 				utils.Logger.WarningF("get shows stat err: %v", err)

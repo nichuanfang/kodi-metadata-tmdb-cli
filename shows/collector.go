@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"io/fs"
 	"os"
+	"path/filepath"
 	"sort"
 	"strconv"
 	"strings"
@@ -38,7 +39,7 @@ func RunCollector(config *config.Config, wg *sync.WaitGroup) {
 // 目录处理队列消费
 func (c *Collector) showsDirProcess() {
 	utils.Logger.Debug("run shows dir process")
-
+	showsStorageDir := c.config.Collector.ShowsStorageDir
 	for {
 		select {
 		case dir := <-c.dirChan: // todo dir处理挪到独立的方法
@@ -55,7 +56,6 @@ func (c *Collector) showsDirProcess() {
 			}
 
 			dir.downloadImage(detail)
-
 			if dir.IsCollection { // 合集
 				subDir, err := c.scanDir(dir.GetFullDir())
 				if err != nil {
@@ -64,11 +64,11 @@ func (c *Collector) showsDirProcess() {
 				}
 
 				for _, item := range subDir {
-					c.watchDir(item.Dir + "/" + item.OriginTitle)
+					// c.watchDir(filepath.Join(item.Dir, item.OriginTitle))
 					item.TvId = dir.TvId
+					item.MaxSeason = len(subDir)
 					c.dirChan <- item
 				}
-
 				continue
 			}
 
@@ -126,6 +126,17 @@ func (c *Collector) showsDirProcess() {
 					c.showsFileProcess(detail.OriginalName, subFile)
 				}
 			}
+			//判断是否是最后一季 是则将刮削好的剧集文件夹移动到存储目录
+			if showsStorageDir != "" {
+				// 只有当最大季度时才进行文件迁移
+				if dir.Season == dir.MaxSeason {
+					firstAirDate := ""
+					if detail.FirstAirDate != "" {
+						firstAirDate = strings.SplitN(detail.FirstAirDate, "-", 2)[0]
+					}
+					dir.MoveToStorage(showsStorageDir, fmt.Sprintf("%s (%s)", detail.Name, firstAirDate))
+				}
+			}
 		}
 	}
 }
@@ -166,7 +177,7 @@ func (c *Collector) runCronScan() {
 			}
 
 			for _, showDir := range showDirs {
-				c.watchDir(showDir.Dir + "/" + showDir.OriginTitle)
+				// c.watchDir(filepath.Join(showDir.Dir, showDir.OriginTitle))
 
 				// 预留50%空间给可能重新放回队列的任务
 				for {
@@ -197,10 +208,10 @@ func (c *Collector) runCronScan() {
 
 // 扫描普通目录，返回其中的电视剧
 func (c *Collector) scanDir(dir string) ([]*Dir, error) {
-	movieDirs := make([]*Dir, 0)
+	showDirs := make([]*Dir, 0)
 
 	if f, err := os.Stat(dir); err != nil || !f.IsDir() {
-		return movieDirs, nil
+		return showDirs, nil
 	}
 
 	dirEntry, err := os.ReadDir(dir)
@@ -219,46 +230,36 @@ func (c *Collector) scanDir(dir string) ([]*Dir, error) {
 			continue
 		}
 
-		movieDir := c.parseShowsDir(dir, fi)
-		if movieDir == nil {
+		showDir := c.parseShowsDir(dir, fi)
+		if showDir == nil {
 			continue
 		}
 
-		movieDirs = append(movieDirs, movieDir)
+		showDirs = append(showDirs, showDir)
 	}
 
-	return movieDirs, nil
+	return showDirs, nil
 }
 
-// ScanMovieFile 扫描可以确定的单个电影、电视机目录，返回其中的视频文件信息
+// ScanShowsFile 扫描可以确定的单个电影、电视机目录，返回其中的视频文件信息
 func (c *Collector) scanShowsFile(d *Dir) (map[string]*File, error) {
-	fileInfo, err := func() ([]fs.FileInfo, error) {
-		f, err := os.Open(d.Dir + "/" + d.OriginTitle)
-		if err != nil {
-			return nil, err
-		}
-		list, err := f.Readdir(-1)
-		f.Close()
-		if err != nil {
-			return nil, err
-		}
-		sort.Slice(list, func(i, j int) bool {
-			return list[i].Name() < list[j].Name()
-		})
-		return list, nil
-	}()
+	dirEntry, err := os.ReadDir(filepath.Join(d.Dir, d.OriginTitle))
 	if err != nil {
 		return nil, err
 	}
 
-	movieFiles := make([]*File, 0)
-	for _, file := range fileInfo {
-		movieFile := c.parseShowsFile(d, file)
-		if movieFile != nil {
+	showFiles := make([]*File, 0)
+	for _, entry := range dirEntry {
+		fileInfo, err := entry.Info()
+		if err != nil {
+			continue
+		}
+		showFile := c.parseShowsFile(d, fileInfo)
+		if showFile != nil {
 			if d.PartMode > 0 {
-				movieFile.Part = utils.MatchPart(file.Name())
+				showFile.Part = utils.MatchPart(entry.Name())
 			}
-			movieFiles = append(movieFiles, movieFile)
+			showFiles = append(showFiles, showFile)
 		}
 	}
 
@@ -267,24 +268,24 @@ func (c *Collector) scanShowsFile(d *Dir) (map[string]*File, error) {
 	// part=2或者更大的数字会使用当前集数*2, 比如part=2的时候, E05.Part1会映射成E09, 可以缺失中间部分剧集
 	if d.PartMode == 1 {
 		// 使用season episode part多重排序
-		sort.Slice(movieFiles, func(i, j int) bool {
-			if movieFiles[i].Season == movieFiles[j].Season {
-				if movieFiles[i].Episode == movieFiles[j].Episode {
-					return movieFiles[i].Part < movieFiles[j].Part
+		sort.Slice(showFiles, func(i, j int) bool {
+			if showFiles[i].Season == showFiles[j].Season {
+				if showFiles[i].Episode == showFiles[j].Episode {
+					return showFiles[i].Part < showFiles[j].Part
 				}
-				return movieFiles[i].Episode < movieFiles[j].Episode
+				return showFiles[i].Episode < showFiles[j].Episode
 			}
-			return movieFiles[i].Season < movieFiles[j].Season
+			return showFiles[i].Season < showFiles[j].Season
 		})
 
 		// 重新计算episode
-		for i, item := range movieFiles {
+		for i, item := range showFiles {
 			item.Episode = i + 1
 			item.SeasonEpisode = fmt.Sprintf("s%02de%02d", item.Season, item.Episode)
 			utils.Logger.DebugF("scanShowsFile partMode=%d, correct episode to %d", d.PartMode, item.Episode)
 		}
 	} else if d.PartMode > 1 {
-		for _, item := range movieFiles {
+		for _, item := range showFiles {
 			item.Episode = (item.Episode-1)*d.PartMode + item.Part
 			item.SeasonEpisode = fmt.Sprintf("s%02de%02d", item.Season, item.Episode)
 			utils.Logger.DebugF("scanShowsFile partMode=%d, correct episode to %d", d.PartMode, item.Episode)
@@ -292,12 +293,12 @@ func (c *Collector) scanShowsFile(d *Dir) (map[string]*File, error) {
 	}
 
 	// TODO 忘记这里为啥返回map，而不是slice了，先临时转成map，后续看看能不能改回来
-	movieFilesMap := make(map[string]*File)
-	for _, item := range movieFiles {
-		movieFilesMap[item.SeasonEpisode] = item
+	showFilesMap := make(map[string]*File)
+	for _, item := range showFiles {
+		showFilesMap[item.SeasonEpisode] = item
 	}
 
-	return movieFilesMap, nil
+	return showFilesMap, nil
 }
 
 // 解析文件, 返回详情
@@ -328,7 +329,7 @@ func (c *Collector) parseShowsFile(dir *Dir, file fs.FileInfo) *File {
 	}
 
 	return &File{
-		Dir:           dir.Dir + "/" + dir.OriginTitle,
+		Dir:           filepath.Join(dir.Dir, dir.OriginTitle),
 		OriginTitle:   utils.FilterTmpSuffix(file.Name()),
 		Season:        snum,
 		Episode:       enum,
@@ -363,6 +364,7 @@ func (c *Collector) parseShowsDir(baseDir string, file fs.FileInfo) *Dir {
 	showsDir := &Dir{
 		Dir:          baseDir,
 		OriginTitle:  file.Name(),
+		MaxSeason:    1,
 		IsCollection: utils.IsCollection(file.Name()),
 	}
 

@@ -3,6 +3,7 @@ package shows
 import (
 	"fengqi/kodi-metadata-tmdb-cli/tmdb"
 	"os"
+	"path/filepath"
 	"strings"
 )
 
@@ -21,7 +22,7 @@ type File struct {
 }
 
 func (f *File) getNfoFile() string {
-	return f.Dir + "/" + f.getTitleWithoutSuffix() + ".nfo"
+	return filepath.Join(f.Dir, f.getTitleWithoutSuffix()+".nfo")
 }
 
 func (f *File) NfoExist() bool {
@@ -39,13 +40,13 @@ func (f *File) getTitleWithoutSuffix() string {
 }
 
 func (f *File) getCacheDir() string {
-	return f.Dir + "/tmdb"
+	return filepath.Join(f.Dir, "tmdb")
 }
 
 // 下载剧集的相关图片
 func (f *File) downloadImage(d *tmdb.TvEpisodeDetail) {
 	file := f.getTitleWithoutSuffix()
 	if len(d.StillPath) > 0 {
-		_ = tmdb.DownloadFile(tmdb.Api.GetImageOriginal(d.StillPath), f.Dir+"/"+file+"-thumb.jpg")
+		_ = tmdb.DownloadFile(tmdb.Api.GetImageOriginal(d.StillPath), filepath.Join(f.Dir, file+"-thumb.jpg"))
 	}
 }

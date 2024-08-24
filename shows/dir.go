@@ -5,6 +5,7 @@ import (
 	"fengqi/kodi-metadata-tmdb-cli/utils"
 	"fmt"
 	"os"
+	"path/filepath"
 	"sort"
 	"strconv"
 	"strings"
@@ -23,6 +24,7 @@ type Dir struct {
 	GroupId      string `json:"group_id"`      // TMDB Episode Group
 	Season       int    `json:"season"`        // 第几季 ，电影类 -1
 	SeasonRange  string `json:"season_range"`  // 合集：S01-S05
+	MaxSeason    int    `json:"max_season"`    //最大季度
 	Year         int    `json:"year"`          // 年份：2020、2021
 	YearRange    string `json:"year_range"`    // 年份：2010-2015
 	Format       string `json:"format"`        // 格式：720p、1080p
@@ -34,7 +36,7 @@ type Dir struct {
 
 // ReadTvId 从文件读取tvId
 func (d *Dir) ReadTvId() {
-	idFile := d.GetCacheDir() + "/id.txt"
+	idFile := filepath.Join(d.GetCacheDir(), "id.txt")
 	if _, err := os.Stat(idFile); err == nil {
 		bytes, err := os.ReadFile(idFile)
 		if err == nil {
@@ -47,7 +49,7 @@ func (d *Dir) ReadTvId() {
 
 // CacheTvId 缓存tvId到文件
 func (d *Dir) CacheTvId() {
-	idFile := d.GetCacheDir() + "/id.txt"
+	idFile := filepath.Join(d.GetCacheDir(), "id.txt")
 	err := os.WriteFile(idFile, []byte(strconv.Itoa(d.TvId)), 0664)
 	if err != nil {
 		utils.Logger.ErrorF("save tvId %d to %s err: %v", d.TvId, idFile, err)
@@ -56,7 +58,7 @@ func (d *Dir) CacheTvId() {
 
 // ReadSeason 从文件读取季
 func (d *Dir) ReadSeason() {
-	seasonFile := d.GetCacheDir() + "/season.txt"
+	seasonFile := filepath.Join(d.GetCacheDir(), "season.txt")
 	if _, err := os.Stat(seasonFile); err == nil {
 		bytes, err := os.ReadFile(seasonFile)
 		if err == nil {
@@ -73,7 +75,7 @@ func (d *Dir) ReadSeason() {
 
 // ReadGroupId 从文件读取剧集分组
 func (d *Dir) ReadGroupId() {
-	groupFile := d.GetCacheDir() + "/group.txt"
+	groupFile := filepath.Join(d.GetCacheDir(), "group.txt")
 	if _, err := os.Stat(groupFile); err == nil {
 		bytes, err := os.ReadFile(groupFile)
 		if err == nil {
@@ -86,17 +88,17 @@ func (d *Dir) ReadGroupId() {
 
 // GetCacheDir 获取TMDB信息缓存目录, 通常是在每部电视剧的根目录下
 func (d *Dir) GetCacheDir() string {
-	return d.GetFullDir() + "/tmdb"
+	return filepath.Join(d.GetFullDir(), "tmdb")
 }
 
 // GetFullDir 获取电视剧的完整目录
 func (d *Dir) GetFullDir() string {
-	return d.Dir + "/" + d.OriginTitle
+	return filepath.Join(d.Dir, d.OriginTitle)
 }
 
 // GetNfoFile 获取电视剧的NFO文件路径
 func (d *Dir) GetNfoFile() string {
-	return d.GetFullDir() + "/tvshow.nfo"
+	return filepath.Join(d.GetFullDir(), "tvshow.nfo")
 }
 
 // NfoExist 判断NFO文件是否存在
@@ -127,11 +129,11 @@ func (d *Dir) downloadImage(detail *tmdb.TvDetail) {
 	utils.Logger.DebugF("download %s images", d.Title)
 
 	if len(detail.PosterPath) > 0 {
-		_ = tmdb.DownloadFile(tmdb.Api.GetImageOriginal(detail.PosterPath), d.GetFullDir()+"/poster.jpg")
+		_ = tmdb.DownloadFile(tmdb.Api.GetImageOriginal(detail.PosterPath), filepath.Join(d.GetFullDir(), "poster.jpg"))
 	}
 
 	if len(detail.BackdropPath) > 0 {
-		_ = tmdb.DownloadFile(tmdb.Api.GetImageOriginal(detail.BackdropPath), d.GetFullDir()+"/fanart.jpg")
+		_ = tmdb.DownloadFile(tmdb.Api.GetImageOriginal(detail.BackdropPath), filepath.Join(d.GetFullDir(), "fanart.jpg"))
 	}
 
 	// TODO group的信息里可能 season poster不全
@@ -141,7 +143,7 @@ func (d *Dir) downloadImage(detail *tmdb.TvDetail) {
 				continue
 			}
 			seasonPoster := fmt.Sprintf("season%02d-poster.jpg", item.SeasonNumber)
-			_ = tmdb.DownloadFile(tmdb.Api.GetImageOriginal(item.PosterPath), d.GetFullDir()+"/"+seasonPoster)
+			_ = tmdb.DownloadFile(tmdb.Api.GetImageOriginal(item.PosterPath), filepath.Join(d.GetFullDir(), seasonPoster))
 		}
 	}
 
@@ -160,7 +162,7 @@ func (d *Dir) downloadImage(detail *tmdb.TvDetail) {
 			}
 		}
 		if image.FilePath != "" {
-			logoFile := d.GetFullDir() + "/clearlogo.png"
+			logoFile := filepath.Join(d.GetFullDir(), "clearlogo.png")
 			_ = tmdb.DownloadFile(tmdb.Api.GetImageOriginal(image.FilePath), logoFile)
 		}
 	}
@@ -168,7 +170,7 @@ func (d *Dir) downloadImage(detail *tmdb.TvDetail) {
 
 // ReadPart 读取分卷模式
 func (d *Dir) ReadPart() {
-	partFile := d.GetCacheDir() + "/part.txt"
+	partFile := filepath.Join(d.GetCacheDir(), "part.txt")
 	if _, err := os.Stat(partFile); err == nil {
 		bytes, err := os.ReadFile(partFile)
 		if err == nil {
@@ -177,4 +179,22 @@ func (d *Dir) ReadPart() {
 			utils.Logger.WarningF("read part specially file: %s err: %v", partFile, err)
 		}
 	}
+}
+
+// 刮削完成后 将剧集移动到正式文件夹
+func (d *Dir) MoveToStorage(showsStorageDir string, tmdbShowName string) error {
+	var err error
+	//剧集文件夹
+	if utils.IsCollection(d.Dir) {
+		showDir := filepath.Join(showsStorageDir, tmdbShowName)
+		err = os.Rename(d.Dir, showDir)
+	} else {
+		showDir := filepath.Join(showsStorageDir, tmdbShowName)
+		err = os.Rename(filepath.Join(d.Dir, d.OriginTitle), showDir)
+	}
+	// 移除旧文件夹
+	if err == nil {
+		utils.Logger.InfoF("移动剧集: %s 到存储目录成功!", tmdbShowName)
+	}
+	return err
 }
