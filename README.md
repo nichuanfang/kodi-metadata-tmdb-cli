@@ -12,7 +12,7 @@
 
     ```shell
     ├─movies                电影目录
-    ├─music_videos      音乐剧目录
+    ├─music_videos          音乐剧目录
     ├─shows                 剧集目录
     ├─temp                  临时目录,用于重命名,文件整理
     └─tmm                   temp目录整理好之后放到该目录进行刮削
