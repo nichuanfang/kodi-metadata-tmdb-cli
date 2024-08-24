@@ -33,12 +33,15 @@
         "movies_dir": [
             "/volume1/down/movies"
         ],
+        "movies_storage_dir": "/volume1/storage/movies",
         "shows_dir": [
             "/volume1/down/shows"
         ],
+        "shows_storage_dir": "/volume1/storage/shows",
         "music_videos_dir": [
-            "/volume1/down/videos"
-        ]
+            "/volume1/down/music_videos"
+        ],
+        "music_videos_storage_dir": "/volume1/down/music_videos"
     },
     "kodi": {
         "enable": true,

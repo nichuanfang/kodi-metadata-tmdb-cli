@@ -13,7 +13,8 @@ type Collector struct {
 // Movie 电影目录详情，从名字分析
 // Fortress.2021.BluRay.1080p.AVC.DTS-HD.MA5.1-MTeam
 type Movie struct {
-	Dir             string `json:"dir"`
+	Dir             string `json:"dir"`            //电影目录
+	StorageDir      string `json:"storage_dir"`    //电影存储的目录
 	OriginTitle     string `json:"origin_title"`   // 原始目录名
 	VideoFileName   string `json:"file_name"`      // 视频文件名，仅限：IsSingleFile=true
 	Title           string `json:"title"`          // 从视频提取的完整文件名 鹰眼 Hawkeye

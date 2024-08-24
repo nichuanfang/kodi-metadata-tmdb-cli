@@ -45,7 +45,11 @@ func (c *Collector) runWatcher() {
 			utils.Logger.InfoF("created file: %s", event.Name)
 
 			moviesDir := parseMoviesDir(filepath.Dir(event.Name), fileInfo)
+			movieStorageDir := c.config.Collector.MoviesStorageDir
 			if moviesDir != nil {
+				if movieStorageDir != "" {
+					moviesDir.StorageDir = filepath.Join(movieStorageDir, moviesDir.OriginTitle)
+				}
 				c.channel <- moviesDir
 			}
 

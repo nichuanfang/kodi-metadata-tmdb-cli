@@ -110,34 +110,20 @@ func parseMoviesDir(baseDir string, file fs.FileInfo) *Movie {
 
 	//识别是否时蓝光或dvd目录
 	if file.IsDir() {
-		fileInfo, err := func() ([]fs.FileInfo, error) {
-			f, err := os.Open(baseDir + "/" + file.Name())
-			if err != nil {
-				return nil, err
-			}
-			list, err := f.Readdir(-1)
-			f.Close()
-			if err != nil {
-				return nil, err
-			}
-			sort.Slice(list, func(i, j int) bool {
-				return list[i].Name() < list[j].Name()
-			})
-			return list, nil
-		}()
+		dirEntry, err := os.ReadDir(baseDir + "/" + file.Name())
 		if err == nil {
 			audioTs := false
 			videoTs := false
-			for _, item := range fileInfo {
-				if item.IsDir() && item.Name() == "BDMV" || item.Name() == "CERTIFICATE" {
+			for _, entry := range dirEntry {
+				if entry.IsDir() && entry.Name() == "BDMV" || entry.Name() == "CERTIFICATE" {
 					movieDir.IsBluRay = true
 					break
 				}
 
-				if item.IsDir() && item.Name() == "AUDIO_TS" {
+				if entry.IsDir() && entry.Name() == "AUDIO_TS" {
 					audioTs = true
 				}
-				if item.IsDir() && item.Name() == "VIDEO_TS" {
+				if entry.IsDir() && entry.Name() == "VIDEO_TS" {
 					videoTs = true
 				}
 				if videoTs && audioTs {
@@ -145,9 +131,9 @@ func parseMoviesDir(baseDir string, file fs.FileInfo) *Movie {
 					break
 				}
 
-				if suffix := utils.IsVideo(item.Name()); suffix != "" {
+				if suffix := utils.IsVideo(entry.Name()); suffix != "" {
 					movieDir.IsSingleFile = true
-					movieDir.VideoFileName = item.Name()
+					movieDir.VideoFileName = entry.Name()
 					break
 				}
 			}
@@ -286,4 +272,9 @@ func (m *Movie) NfoExist(mode int) bool {
 	}
 
 	return false
+}
+
+// 刮削完成后 迁移到存储目录
+func (m *Movie) MoveToStorage() error {
+	return nil
 }

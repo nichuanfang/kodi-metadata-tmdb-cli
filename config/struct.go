@@ -48,5 +48,5 @@ type CollectorConfig struct {
 	ShowsDir              []string `json:"shows_dir"`                // 需要监听的电视剧文件根目录，可多个
 	ShowsStorageDir       string   `json:"shows_storage_dir"`        //刮削后实际存放电视剧的文件夹, 仅为一个
 	MusicVideosDir        []string `json:"music_videos_dir"`         //需要监听的音乐视频文件根目录，可多个
-	MusicStorageVideosDir string   `json:"music_videos_storage_dir"` //刮削后实际存放电视剧的文件夹, 仅为一个
+	MusicVideosStorageDir string   `json:"music_videos_storage_dir"` //刮削后实际存放电视剧的文件夹, 仅为一个
 }

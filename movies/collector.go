@@ -4,10 +4,8 @@ import (
 	"fengqi/kodi-metadata-tmdb-cli/config"
 	"fengqi/kodi-metadata-tmdb-cli/kodi"
 	"fengqi/kodi-metadata-tmdb-cli/utils"
-	"io/fs"
 	"os"
 	"path/filepath"
-	"sort"
 	"sync"
 	"time"
 )
@@ -39,6 +37,7 @@ func (c *Collector) runMoviesProcess() {
 			dir.checkCacheDir()
 			detail, err := dir.getMovieDetail()
 			if err != nil || detail == nil {
+				_ = dir.MoveToStorage()
 				continue
 			}
 
@@ -48,8 +47,8 @@ func (c *Collector) runMoviesProcess() {
 			}
 
 			_ = dir.downloadImage(detail)
-			// 移动到正式文件夹
-
+			// 移动到正式文件夹(如果是电影集 以电影集为父目录 存储到电影文件夹 同时删除原刮削好的文件)
+			_ = dir.MoveToStorage()
 		}
 	}
 }
@@ -96,44 +95,33 @@ func (c *Collector) scanDir(dir string) ([]*Movie, error) {
 	if f, err := os.Stat(dir); err != nil || !f.IsDir() {
 		return movieDirs, nil
 	}
-
-	fileInfo, err := func() ([]fs.FileInfo, error) {
-		f, err := os.Open(dir)
-		if err != nil {
-			return nil, err
-		}
-		list, err := f.Readdir(-1)
-		f.Close()
-		if err != nil {
-			return nil, err
-		}
-		sort.Slice(list, func(i, j int) bool {
-			return list[i].Name() < list[j].Name()
-		})
-		return list, nil
-	}()
+	dirEntry, err := os.ReadDir(dir)
 	if err != nil {
 		utils.Logger.ErrorF("scan dir: %s err: %v", dir, err)
 		return nil, err
 	}
 
-	for _, file := range fileInfo {
+	for _, entry := range dirEntry {
+		fileName := entry.Name()
+		fileInfo, _ := entry.Info()
 		// 合集，以 Iron.Man.2008-2013.Blu-ray.x264.MiniBD1080P-CMCT 为例，暂定使用 2008-2013 做为判断特征
-		if yearRange := utils.IsYearRangeLike(file.Name()); yearRange != "" {
-			movieDir, err := c.scanDir(dir + "/" + file.Name())
+		if yearRange := utils.IsYearRangeLike(fileName); yearRange != "" {
+			movieDir, err := c.scanDir(dir + "/" + fileName)
 			if err != nil {
-				utils.Logger.ErrorF("scan collection dir: %s err: %v", dir+"/"+file.Name(), err)
+				utils.Logger.ErrorF("scan collection dir: %s err: %v", dir+"/"+fileName, err)
 				continue
 			}
 			movieDirs = append(movieDirs, movieDir...)
 			continue
 		}
-
-		movieDir := parseMoviesDir(dir, file)
+		movieDir := parseMoviesDir(dir, fileInfo)
 		if movieDir == nil {
 			continue
 		}
-
+		movieStorageDir := c.config.Collector.MoviesStorageDir
+		if movieStorageDir != "" {
+			movieDir.StorageDir = filepath.Join(movieStorageDir, movieDir.OriginTitle)
+		}
 		movieDirs = append(movieDirs, movieDir)
 	}
 
@@ -152,31 +140,20 @@ func (c *Collector) skipFolders(path, filename string) bool {
 
 func (c *Collector) listFilesAndFolders(path string) []os.FileInfo {
 	list := make([]os.FileInfo, 0)
-	pathInfo, err := func() ([]fs.FileInfo, error) {
-		f, err := os.Open(path)
-		if err != nil {
-			return nil, err
-		}
-		list, err := f.Readdir(-1)
-		f.Close()
-		if err != nil {
-			return nil, err
-		}
-		sort.Slice(list, func(i, j int) bool {
-			return list[i].Name() < list[j].Name()
-		})
-		return list, nil
-	}()
+	dirEntry, err := os.ReadDir(path)
 	if err != nil {
 		return list
 	}
-
-	for _, file := range pathInfo {
-		if c.skipFolders(path, file.Name()) {
+	for _, entry := range dirEntry {
+		fileName := entry.Name()
+		if entry.IsDir() && c.skipFolders(path, fileName) {
 			continue
 		}
-
-		list = append(list, file)
+		fileInfo, err := entry.Info()
+		if err != nil {
+			continue
+		}
+		list = append(list, fileInfo)
 	}
 
 	return list
