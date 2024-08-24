@@ -109,7 +109,7 @@ func parseMoviesDir(baseDir string, file fs.FileInfo) *Movie {
 		}
 	}
 
-	//识别是否时蓝光或dvd目录
+	//识别是否是蓝光或dvd目录
 	if file.IsDir() {
 		dirEntry, err := os.ReadDir(filepath.Join(baseDir, file.Name()))
 		if err == nil {
