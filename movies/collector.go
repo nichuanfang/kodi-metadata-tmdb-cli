@@ -37,7 +37,6 @@ func (c *Collector) runMoviesProcess() {
 			dir.checkCacheDir()
 			detail, err := dir.getMovieDetail()
 			if err != nil || detail == nil {
-				_ = dir.MoveToStorage()
 				continue
 			}
 
@@ -47,8 +46,7 @@ func (c *Collector) runMoviesProcess() {
 			}
 
 			_ = dir.downloadImage(detail)
-			// 移动到正式文件夹(如果是电影集 以电影集为父目录 存储到电影文件夹 同时删除原刮削好的文件)
-			_ = dir.MoveToStorage()
+			dir.MoveToStorage(detail.BelongsToCollection.Name)
 		}
 	}
 }
@@ -117,10 +115,6 @@ func (c *Collector) scanDir(dir string) ([]*Movie, error) {
 		movieDir := parseMoviesDir(dir, fileInfo)
 		if movieDir == nil {
 			continue
-		}
-		movieStorageDir := c.config.Collector.MoviesStorageDir
-		if movieStorageDir != "" {
-			movieDir.StorageDir = filepath.Join(movieStorageDir, movieDir.OriginTitle)
 		}
 		movieDirs = append(movieDirs, movieDir)
 	}

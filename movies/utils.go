@@ -274,7 +274,7 @@ func (m *Movie) NfoExist(mode int) bool {
 	return false
 }
 
-// 刮削完成后 迁移到存储目录
-func (m *Movie) MoveToStorage() error {
+// 刮削完成后 移动到正式文件夹(如果是电影集 以电影集为父目录 存储到电影文件夹 同时删除原刮削好的文件) 同时文件夹规范化命名
+func (m *Movie) MoveToStorage(collection string) error {
 	return nil
 }
