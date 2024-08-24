@@ -64,7 +64,7 @@ func (c *Collector) showsDirProcess() {
 				}
 
 				for _, item := range subDir {
-					// c.watchDir(filepath.Join(item.Dir, item.OriginTitle))
+					c.watchDir(filepath.Join(item.Dir, item.OriginTitle))
 					item.TvId = dir.TvId
 					item.MaxSeason = len(subDir)
 					c.dirChan <- item
@@ -177,7 +177,7 @@ func (c *Collector) runCronScan() {
 			}
 
 			for _, showDir := range showDirs {
-				// c.watchDir(filepath.Join(showDir.Dir, showDir.OriginTitle))
+				c.watchDir(filepath.Join(showDir.Dir, showDir.OriginTitle))
 
 				// 预留50%空间给可能重新放回队列的任务
 				for {

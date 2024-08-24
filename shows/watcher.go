@@ -45,7 +45,7 @@ func (c *Collector) runWatcher() {
 			}
 
 			// 删除文件夹
-			if event.Has(fsnotify.Remove) && fileInfo.IsDir() {
+			if (event.Has(fsnotify.Remove) || event.Has(fsnotify.Rename)) && fileInfo.IsDir() {
 				utils.Logger.InfoF("removed dir: %s", event.Name)
 
 				err := watcher.Remove(event.Name)
