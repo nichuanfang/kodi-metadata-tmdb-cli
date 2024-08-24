@@ -255,14 +255,12 @@ func (m *Movie) getNfoFile(mode int) string {
 	}
 
 	if mode == 2 {
+		return m.VideoFileNameWithoutSuffix() + ".nfo"
+	} else if mode == 1 {
 		return filepath.Join(m.GetFullDir(), "movie.nfo")
-	}
-
-	if mode == 1 && m.VideoFileName == "" {
+	} else {
 		return ""
 	}
-
-	return m.VideoFileNameWithoutSuffix() + ".nfo"
 }
 
 func (m *Movie) NfoExist(mode int) bool {
