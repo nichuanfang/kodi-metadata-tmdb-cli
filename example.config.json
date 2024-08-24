@@ -29,7 +29,7 @@
             "gallery",
             "metadata"
         ],
-        "movies_nfo_mode": 2,
+        "movies_nfo_mode": 1,
         "movies_dir": [
             "/volume1/down/movies"
         ],

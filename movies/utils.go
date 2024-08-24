@@ -254,10 +254,10 @@ func (m *Movie) getNfoFile(mode int) string {
 		return filepath.Join(m.GetFullDir(), "VIDEO_TS", "VIDEO_TS.nfo")
 	}
 
-	if mode == 2 {
-		return m.VideoFileNameWithoutSuffix() + ".nfo"
-	} else if mode == 1 {
+	if mode == 1 {
 		return filepath.Join(m.GetFullDir(), "movie.nfo")
+	} else if mode == 2 {
+		return m.VideoFileNameWithoutSuffix() + ".nfo"
 	} else {
 		return ""
 	}
