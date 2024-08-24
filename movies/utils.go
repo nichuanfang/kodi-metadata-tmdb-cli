@@ -274,11 +274,11 @@ func (m *Movie) NfoExist(mode int) bool {
 }
 
 // 刮削完成后 移动到正式文件夹(如果是电影集 以电影集为父目录 存储到电影文件夹 同时删除原刮削好的文件) 同时文件夹规范化命名
-func (m *Movie) MoveToStorage(moviesStorageDir string, collection string) error {
+func (m *Movie) MoveToStorage(moviesStorageDir string, collection string, tmdbName string) error {
 	// 旧文件夹
 	oldPathDir := filepath.Join(m.Dir, m.OriginTitle)
 	// 新文件夹
-	newMovieDir := filepath.Join(moviesStorageDir, collection, m.OriginTitle)
+	newMovieDir := filepath.Join(moviesStorageDir, collection, tmdbName)
 	//电影集文件夹
 	collectionDir := filepath.Join(moviesStorageDir, collection)
 	if _, err := os.Stat(collectionDir); err != nil && os.IsNotExist(err) {
