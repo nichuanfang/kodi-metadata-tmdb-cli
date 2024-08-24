@@ -44,9 +44,14 @@ func (c *Collector) runMoviesProcess() {
 				_ = dir.saveToNfo(detail, c.config.Collector.MoviesNfoMode)
 				kodi.Rpc.AddRefreshTask(kodi.TaskRefreshMovie, detail.OriginalTitle)
 			}
-
-			_ = dir.downloadImage(detail)
-			dir.MoveToStorage(detail.BelongsToCollection.Name)
+			err = dir.downloadImage(detail)
+			moviesStorageDir := c.config.Collector.MoviesStorageDir
+			if err == nil && moviesStorageDir != "" {
+				err = dir.MoveToStorage(moviesStorageDir, detail.BelongsToCollection.Name)
+				if err != nil {
+					utils.Logger.ErrorF("移动电影: %s 到存储目录失败: %v", dir.OriginTitle, err)
+				}
+			}
 		}
 	}
 }
@@ -104,9 +109,9 @@ func (c *Collector) scanDir(dir string) ([]*Movie, error) {
 		fileInfo, _ := entry.Info()
 		// 合集，以 Iron.Man.2008-2013.Blu-ray.x264.MiniBD1080P-CMCT 为例，暂定使用 2008-2013 做为判断特征
 		if yearRange := utils.IsYearRangeLike(fileName); yearRange != "" {
-			movieDir, err := c.scanDir(dir + "/" + fileName)
+			movieDir, err := c.scanDir(filepath.Join(dir, fileName))
 			if err != nil {
-				utils.Logger.ErrorF("scan collection dir: %s err: %v", dir+"/"+fileName, err)
+				utils.Logger.ErrorF("scan collection dir: %s err: %v", filepath.Join(dir, fileName), err)
 				continue
 			}
 			movieDirs = append(movieDirs, movieDir...)

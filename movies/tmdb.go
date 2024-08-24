@@ -6,6 +6,7 @@ import (
 	"fengqi/kodi-metadata-tmdb-cli/utils"
 	"io/fs"
 	"os"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"time"
@@ -16,9 +17,9 @@ func (d *Movie) getMovieDetail() (*tmdb.MovieDetail, error) {
 	var detail = new(tmdb.MovieDetail)
 
 	// 从缓存读取
-	cacheFile := d.GetCacheDir() + "/movie.json"
+	cacheFile := filepath.Join(d.GetCacheDir(), "movie.json")
 	if d.IsFile {
-		cacheFile = d.GetCacheDir() + "/" + d.OriginTitle + ".movie.json"
+		cacheFile = filepath.Join(d.GetCacheDir(), d.OriginTitle+".movie.json")
 	}
 	cacheExpire := false
 	if cf, err := os.Stat(cacheFile); err == nil {
@@ -43,9 +44,9 @@ func (d *Movie) getMovieDetail() (*tmdb.MovieDetail, error) {
 	if detail.Id == 0 || cacheExpire {
 		detail.FromCache = false
 		movieId := detail.Id
-		idFile := d.GetCacheDir() + "/id.txt"
+		idFile := filepath.Join(d.GetCacheDir(), "id.txt")
 		if d.IsFile {
-			idFile = d.Dir + "/tmdb/" + d.OriginTitle + ".id.txt"
+			idFile = filepath.Join(d.Dir, "tmdb", d.OriginTitle+".id.txt")
 		}
 		if _, err = os.Stat(idFile); err == nil {
 			bytes, err := os.ReadFile(idFile)

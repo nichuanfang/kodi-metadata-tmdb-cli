@@ -5,6 +5,7 @@ import (
 	"fengqi/kodi-metadata-tmdb-cli/utils"
 	"io/fs"
 	"os"
+	"path/filepath"
 	"sort"
 	"strconv"
 	"strings"
@@ -95,9 +96,9 @@ func parseMoviesDir(baseDir string, file fs.FileInfo) *Movie {
 
 	// 通过文件指定id
 	// todo all use baseDir + "/tmdb/"
-	idFile := baseDir + "/" + file.Name() + "/tmdb/id.txt"
+	idFile := filepath.Join(baseDir, file.Name(), "tmdb", "id.txt")
 	if !file.IsDir() {
-		idFile = baseDir + "/tmdb/" + movieName + ".id.txt"
+		idFile = filepath.Join(baseDir, "tmdb", movieName, "id.txt")
 	}
 	if _, err := os.Stat(idFile); err == nil {
 		bytes, err := os.ReadFile(idFile)
@@ -110,7 +111,7 @@ func parseMoviesDir(baseDir string, file fs.FileInfo) *Movie {
 
 	//识别是否时蓝光或dvd目录
 	if file.IsDir() {
-		dirEntry, err := os.ReadDir(baseDir + "/" + file.Name())
+		dirEntry, err := os.ReadDir(filepath.Join(baseDir, file.Name()))
 		if err == nil {
 			audioTs := false
 			videoTs := false
@@ -157,13 +158,13 @@ func (d *Movie) checkCacheDir() {
 
 func (d *Movie) GetCacheDir() string {
 	if d.IsFile {
-		return d.Dir + "/tmdb"
+		return filepath.Join(d.Dir, "tmdb")
 	}
-	return d.GetFullDir() + "/tmdb"
+	return filepath.Join(d.GetFullDir(), "tmdb")
 }
 
 func (d *Movie) GetFullDir() string {
-	return d.Dir + "/" + d.OriginTitle
+	return filepath.Join(d.Dir, d.OriginTitle)
 }
 
 func (m *Movie) VideoFileNameWithoutSuffix() string {
@@ -172,7 +173,7 @@ func (m *Movie) VideoFileNameWithoutSuffix() string {
 	}
 
 	suffix := utils.IsVideo(m.VideoFileName)
-	return m.GetFullDir() + "/" + strings.Replace(m.VideoFileName, "."+suffix, "", 1)
+	return filepath.Join(m.GetFullDir(), strings.Replace(m.VideoFileName, "."+suffix, "", 1))
 }
 
 func (d *Movie) downloadImage(detail *tmdb.MovieDetail) error {
@@ -180,10 +181,10 @@ func (d *Movie) downloadImage(detail *tmdb.MovieDetail) error {
 
 	var err error
 	if len(detail.PosterPath) > 0 {
-		posterFile := d.GetFullDir() + "/poster.jpg"
+		posterFile := filepath.Join(d.GetFullDir(), "poster.jpg")
 		if d.IsFile {
 			suffix := utils.IsVideo(d.OriginTitle)
-			posterFile = d.Dir + "/" + strings.Replace(d.OriginTitle, "."+suffix, "", 1) + "-poster.jpg"
+			posterFile = filepath.Join(d.Dir, strings.Replace(d.OriginTitle, "."+suffix, "", 1)+"-poster.jpg")
 		} else if name := d.VideoFileNameWithoutSuffix(); name != "" {
 			posterFile = name + "-poster.jpg"
 		}
@@ -191,10 +192,10 @@ func (d *Movie) downloadImage(detail *tmdb.MovieDetail) error {
 	}
 
 	if len(detail.BackdropPath) > 0 {
-		fanArtFile := d.GetFullDir() + "/fanart.jpg"
+		fanArtFile := filepath.Join(d.GetFullDir(), "fanart.jpg")
 		if d.IsFile {
 			suffix := utils.IsVideo(d.OriginTitle)
-			fanArtFile = d.Dir + "/" + strings.Replace(d.OriginTitle, "."+suffix, "", 1) + "-fanart.jpg"
+			fanArtFile = filepath.Join(d.Dir, strings.Replace(d.OriginTitle, "."+suffix, "", 1)+"-fanart.jpg")
 		} else if name := d.VideoFileNameWithoutSuffix(); name != "" {
 			fanArtFile = name + "-fanart.jpg"
 		}
@@ -217,10 +218,10 @@ func (d *Movie) downloadImage(detail *tmdb.MovieDetail) error {
 			}
 		}
 		if image.FilePath != "" {
-			logoFile := d.GetFullDir() + "/clearlogo.jpg"
+			logoFile := filepath.Join(d.GetFullDir(), "clearlogo.jpg")
 			if d.IsFile {
 				suffix := utils.IsVideo(d.OriginTitle)
-				logoFile = d.Dir + "/" + strings.Replace(d.OriginTitle, "."+suffix, "", 1) + "-clearlogo.png"
+				logoFile = filepath.Join(d.Dir, strings.Replace(d.OriginTitle, "."+suffix, "", 1)+"-clearlogo.png")
 			} else if name := d.VideoFileNameWithoutSuffix(); name != "" {
 				logoFile = name + "-clearlogo.png"
 			}
@@ -239,22 +240,22 @@ func (d *Movie) downloadImage(detail *tmdb.MovieDetail) error {
 func (m *Movie) getNfoFile(mode int) string {
 	if m.IsFile {
 		suffix := utils.IsVideo(m.OriginTitle)
-		return m.Dir + "/" + strings.Replace(m.OriginTitle, "."+suffix, "", 1) + ".nfo"
+		return filepath.Join(m.Dir, strings.Replace(m.OriginTitle, "."+suffix, "", 1)+".nfo")
 	}
 
 	if m.IsBluRay {
-		if utils.FileExist(m.GetFullDir() + "/BDMV/MovieObject.bdmv") {
-			return m.GetFullDir() + "/BDMV/MovieObject.nfo"
+		if utils.FileExist(filepath.Join(m.GetFullDir(), "BDMV", "MovieObject.bdmv")) {
+			return filepath.Join(m.GetFullDir(), "BDMV", "MovieObject.nfo")
 		}
-		return m.GetFullDir() + "/BDMV/index.nfo"
+		return filepath.Join(m.GetFullDir(), "BDMV", "index.nfo")
 	}
 
 	if m.IsDvd {
-		return m.GetFullDir() + "/VIDEO_TS/VIDEO_TS.nfo"
+		return filepath.Join(m.GetFullDir(), "VIDEO_TS", "VIDEO_TS.nfo")
 	}
 
 	if mode == 2 {
-		return m.GetFullDir() + "/movie.nfo"
+		return filepath.Join(m.GetFullDir(), "movie.nfo")
 	}
 
 	if mode == 1 && m.VideoFileName == "" {
@@ -275,6 +276,29 @@ func (m *Movie) NfoExist(mode int) bool {
 }
 
 // 刮削完成后 移动到正式文件夹(如果是电影集 以电影集为父目录 存储到电影文件夹 同时删除原刮削好的文件) 同时文件夹规范化命名
-func (m *Movie) MoveToStorage(collection string) error {
-	return nil
+func (m *Movie) MoveToStorage(moviesStorageDir string, collection string) error {
+	// 旧文件夹
+	oldPathDir := filepath.Join(m.Dir, m.OriginTitle)
+	// 新文件夹
+	newMovieDir := filepath.Join(moviesStorageDir, collection, m.OriginTitle)
+	//电影集文件夹
+	collectionDir := filepath.Join(moviesStorageDir, collection)
+	if _, err := os.Stat(collectionDir); err != nil && os.IsNotExist(err) {
+		// 电影集文件夹不存在 则新建
+		os.MkdirAll(collectionDir, 0755)
+	}
+	if _, err := os.Stat(newMovieDir); err == nil {
+		// 新电影文件夹如果存在则删除 覆盖策略
+		err := os.RemoveAll(newMovieDir)
+		if err != nil {
+			return err
+		}
+	}
+	// 尝试移动文件夹
+	err := os.Rename(oldPathDir, newMovieDir)
+	// 移除旧文件夹
+	if err == nil {
+		utils.Logger.InfoF("移动电影: %s 到存储目录成功!", m.OriginTitle)
+	}
+	return err
 }
