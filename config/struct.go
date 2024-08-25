@@ -5,6 +5,7 @@ type Config struct {
 	Ffmpeg    *FfmpegConfig    `json:"ffmpeg"`    // ffmpeg配置，给音乐视频使用的
 	Tmdb      *TmdbConfig      `json:"tmdb"`      // TMDB 配置
 	Kodi      *KodiConfig      `json:"kodi"`      // kodi配置
+	WebDAV    *WebDAVConfig    `json:"webdav"`    //webdav配置
 	Collector *CollectorConfig `json:"collector"` // 刮削配置
 }
 
@@ -36,6 +37,14 @@ type TmdbConfig struct {
 	Language  string `json:"language"`   // 语言
 	Rating    string `json:"rating"`     // 内容分级
 	Proxy     string `json:"proxy"`      // 请求TMDB经过代理，支持 http、https、socks5、socks5h
+}
+
+type WebDAVConfig struct {
+	WebDAVUrl  string `json:"webdav_url"`        //webdav地址
+	WebDAVUser string `json:"webdav_user"`       //webdav用户名
+	WebDAVPass string `json:"webdav_pass"`       //webdav密码
+	MoviesDir  string `json:"webdav_movies_dir"` //wevdav网盘电影文件夹
+	ShowsDir   string `json:"webdav_shows_dir"`  //wevdav网盘剧集文件夹
 }
 
 type CollectorConfig struct {

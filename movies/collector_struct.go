@@ -7,6 +7,7 @@ import (
 type Collector struct {
 	config  *config.Config
 	tmdb    *config.TmdbConfig
+	webdav  *config.WebDAVConfig
 	channel chan *Movie
 }
 

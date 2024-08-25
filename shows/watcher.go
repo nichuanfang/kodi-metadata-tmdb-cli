@@ -2,9 +2,10 @@ package shows
 
 import (
 	"fengqi/kodi-metadata-tmdb-cli/utils"
-	"github.com/fsnotify/fsnotify"
 	"os"
 	"path/filepath"
+
+	"github.com/fsnotify/fsnotify"
 )
 
 var watcher *fsnotify.Watcher

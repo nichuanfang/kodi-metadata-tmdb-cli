@@ -1,8 +1,10 @@
 package shows
 
 import (
+	"errors"
 	"fengqi/kodi-metadata-tmdb-cli/tmdb"
 	"fengqi/kodi-metadata-tmdb-cli/utils"
+	"fengqi/kodi-metadata-tmdb-cli/webdav"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -24,7 +26,6 @@ type Dir struct {
 	GroupId      string `json:"group_id"`      // TMDB Episode Group
 	Season       int    `json:"season"`        // 第几季 ，电影类 -1
 	SeasonRange  string `json:"season_range"`  // 合集：S01-S05
-	MaxSeason    int    `json:"max_season"`    //最大季度
 	Year         int    `json:"year"`          // 年份：2020、2021
 	YearRange    string `json:"year_range"`    // 年份：2010-2015
 	Format       string `json:"format"`        // 格式：720p、1080p
@@ -136,17 +137,6 @@ func (d *Dir) downloadImage(detail *tmdb.TvDetail) {
 		_ = tmdb.DownloadFile(tmdb.Api.GetImageOriginal(detail.BackdropPath), filepath.Join(d.GetFullDir(), "fanart.jpg"))
 	}
 
-	// TODO group的信息里可能 season poster不全
-	if len(detail.Seasons) > 0 {
-		for _, item := range detail.Seasons {
-			if !d.IsCollection && item.SeasonNumber != d.Season || item.PosterPath == "" {
-				continue
-			}
-			seasonPoster := fmt.Sprintf("season%02d-poster.jpg", item.SeasonNumber)
-			_ = tmdb.DownloadFile(tmdb.Api.GetImageOriginal(item.PosterPath), filepath.Join(d.GetFullDir(), seasonPoster))
-		}
-	}
-
 	if detail.Images != nil && len(detail.Images.Logos) > 0 {
 		sort.SliceStable(detail.Images.Logos, func(i, j int) bool {
 			return detail.Images.Logos[i].VoteAverage > detail.Images.Logos[j].VoteAverage
@@ -168,6 +158,21 @@ func (d *Dir) downloadImage(detail *tmdb.TvDetail) {
 	}
 }
 
+// 延迟季封面图的下载
+// TODO group的信息里可能 season poster不全
+func (d *Dir) downloadSeasonPosterImage(detail *tmdb.TvDetail) {
+	// TODO group的信息里可能 season poster不全
+	if len(detail.Seasons) > 0 {
+		for _, item := range detail.Seasons {
+			if !d.IsCollection && item.SeasonNumber != d.Season || item.PosterPath == "" {
+				continue
+			}
+			seasonPoster := fmt.Sprintf("season%02d-poster.jpg", item.SeasonNumber)
+			_ = tmdb.DownloadFile(tmdb.Api.GetImageOriginal(item.PosterPath), filepath.Join(d.GetFullDir(), seasonPoster))
+		}
+	}
+}
+
 // ReadPart 读取分卷模式
 func (d *Dir) ReadPart() {
 	partFile := filepath.Join(d.GetCacheDir(), "part.txt")
@@ -182,19 +187,101 @@ func (d *Dir) ReadPart() {
 }
 
 // 刮削完成后 将剧集移动到正式文件夹
-func (d *Dir) MoveToStorage(showsStorageDir string, tmdbShowName string) error {
-	var err error
-	//剧集文件夹
-	if utils.IsCollection(d.Dir) {
-		showDir := filepath.Join(showsStorageDir, tmdbShowName)
-		err = os.Rename(d.Dir, showDir)
-	} else {
-		showDir := filepath.Join(showsStorageDir, tmdbShowName)
-		err = os.Rename(filepath.Join(d.Dir, d.OriginTitle), showDir)
+func (d *Dir) MoveToStorage(showsStorageDir string, tmdbShowName string, seasonCount int) error {
+	// 剧集文件夹
+	showDir := filepath.Join(showsStorageDir, tmdbShowName)
+	// 季文件夹
+	seasonDir := filepath.Join(showDir, fmt.Sprintf("S%02d", seasonCount))
+	_, err := os.Stat(showDir)
+	if err != nil && os.IsNotExist(err) {
+		os.MkdirAll(showDir, 0755)
+	} else if err == nil {
+		//遍历剧集目录 找到跟seasonCount的季度目录 删除
+		dirEntry, err := os.ReadDir(showDir)
+		if err != nil {
+			return errors.New(err.Error())
+		}
+		for _, entry := range dirEntry {
+			if !entry.IsDir() {
+				continue
+			}
+			showName := entry.Name()
+			// 过滤可选字符
+			showName = utils.FilterOptionals(showName)
+			// 过滤掉或替换歧义的内容
+			showName = utils.SeasonCorrecting(showName)
+			// 提取季度
+			if season := utils.IsSeason(entry.Name()); len(season) > 0 {
+				s := season[1:]
+				i, err := strconv.Atoi(s)
+				if err == nil && i == seasonCount {
+					err = os.RemoveAll(filepath.Join(showDir, entry.Name()))
+					if err != nil {
+						return err
+					}
+					break
+				}
+			}
+		}
+
 	}
-	// 移除旧文件夹
-	if err == nil {
-		utils.Logger.InfoF("移动剧集: %s 到存储目录成功!", tmdbShowName)
+	// 如果剧集tmdb文件夹不存在则 创建tmdb文件夹
+	if _, err := os.Stat(filepath.Join(showDir, "tmdb")); err != nil && os.IsNotExist(err) {
+		err = os.MkdirAll(filepath.Join(showDir, "tmdb"), 0755)
+		if err != nil {
+			return err
+		}
 	}
+	moveSingleSeason(filepath.Join(d.Dir, d.OriginTitle), showDir, seasonDir, seasonCount)
+	// 季后置处理和日志
+	return postProcess(d, tmdbShowName, seasonCount)
+}
+
+// 迁移单季
+func moveSingleSeason(fromSeason string, showDir string, toSeason string, seasonCount int) error {
+	// 移动剧集元信息  剩下的放到单独的一个季度文件夹
+
+	//属于剧集(showDir)的元信息文件 需要移动
+	showMetaFiles := make([]string, 0)
+	showMetaFiles = append(showMetaFiles, "tvshow.nfo", "poster.jpg", "fanart.jpg", "clearlogo.png",
+		fmt.Sprintf("season%02d-poster.jpg", seasonCount), filepath.Join("tmdb", "id.txt"), filepath.Join("tmdb", "tv.json"))
+	// 迁移文件
+	var targetFile string
+	for _, item := range showMetaFiles {
+		targetFile = filepath.Join(showDir, item)
+		sourceFile := filepath.Join(fromSeason, item)
+		if _, target_err := os.Stat(targetFile); target_err == nil {
+			// 文件已存在 删除
+			if _, source_err := os.Stat(sourceFile); source_err == nil {
+				// 源目录存在该文件 删除
+				os.Remove(sourceFile)
+			}
+			continue
+		}
+		err := os.Rename(filepath.Join(fromSeason, item), targetFile)
+		if err != nil {
+			continue
+		}
+	}
+	// 迁移剩余的文件到季文件夹
+	err := os.Rename(fromSeason, toSeason)
 	return err
+}
+
+// 季处理完毕 如果是合集 当seasonCount等于最大季 则移除合集文件夹
+func postProcess(d *Dir, tmdbShowName string, seasonCount int) error {
+	if season_range := utils.IsSeasonRange(d.Dir); season_range != "" {
+		utils.Logger.InfoF("移动剧集: %s 第%d季 到存储目录成功!", tmdbShowName, seasonCount)
+		last_season := strings.Split(season_range, "-")[1]
+		s := last_season[1:]
+		i, err := strconv.Atoi(s)
+		if err == nil && i == seasonCount {
+			err = webdav.RemoveShow(filepath.Base(d.Dir))
+			if err != nil {
+				return err
+			}
+			utils.Logger.InfoF("移动剧集: %s 存储目录成功!", tmdbShowName)
+		}
+	}
+	return nil
 }

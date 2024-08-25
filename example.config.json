@@ -55,5 +55,12 @@
         "max_worker": 4,
         "ffmpeg_path": "/usr/local/ffmpeg-5.0.1-amd64-static/ffmpeg",
         "ffprobe_path": "/usr/local/ffmpeg-5.0.1-amd64-static/ffprobe"
+    },
+    "webdav": {
+        "webdav_url": "http://127.0.0.1:19798/dav",
+        "webdav_user": "root",
+        "webdav_pass": "123456",
+        "webdav_movies_dir": "",
+        "webdav_shows_dir": ""
     }
 }

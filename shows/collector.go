@@ -54,7 +54,7 @@ func (c *Collector) showsDirProcess() {
 				_ = dir.saveToNfo(detail)
 				kodi.Rpc.AddRefreshTask(kodi.TaskRefreshTVShow, detail.OriginalName)
 			}
-
+			//下载电视剧的相关图片
 			dir.downloadImage(detail)
 			if dir.IsCollection { // 合集
 				subDir, err := c.scanDir(dir.GetFullDir())
@@ -66,7 +66,6 @@ func (c *Collector) showsDirProcess() {
 				for _, item := range subDir {
 					c.watchDir(filepath.Join(item.Dir, item.OriginTitle))
 					item.TvId = dir.TvId
-					item.MaxSeason = len(subDir)
 					c.dirChan <- item
 				}
 				continue
@@ -74,6 +73,8 @@ func (c *Collector) showsDirProcess() {
 
 			// 普通剧集
 			subFiles, err := c.scanShowsFile(dir)
+			//下载季度相关的图片
+			dir.downloadSeasonPosterImage(detail)
 			if err != nil {
 				utils.Logger.ErrorF("scan shows dir: %s err: %v", dir.OriginTitle, err)
 				continue
@@ -126,15 +127,15 @@ func (c *Collector) showsDirProcess() {
 					c.showsFileProcess(detail.OriginalName, subFile)
 				}
 			}
-			//判断是否是最后一季 是则将刮削好的剧集文件夹移动到存储目录
 			if showsStorageDir != "" {
-				// 只有当最大季度时才进行文件迁移
-				if dir.Season == dir.MaxSeason {
-					firstAirDate := ""
-					if detail.FirstAirDate != "" {
-						firstAirDate = strings.SplitN(detail.FirstAirDate, "-", 2)[0]
-					}
-					dir.MoveToStorage(showsStorageDir, fmt.Sprintf("%s (%s)", detail.Name, firstAirDate))
+				firstAirDate := ""
+				if detail.FirstAirDate != "" {
+					firstAirDate = strings.SplitN(detail.FirstAirDate, "-", 2)[0]
+				}
+				err = dir.MoveToStorage(showsStorageDir, fmt.Sprintf("%s (%s)", detail.Name, firstAirDate), dir.Season)
+				if err != nil {
+					utils.Logger.Error(err.Error())
+					return
 				}
 			}
 		}
@@ -320,6 +321,7 @@ func (c *Collector) parseShowsFile(dir *Dir, file fs.FileInfo) *File {
 	// 提取季和集
 	snum, enum := utils.MatchEpisode(fileName + "." + suffix)
 	if dir.Season > 0 {
+		dir.Season = max(dir.Season, snum)
 		snum = dir.Season
 	}
 	utils.Logger.InfoF("find season: %d episode: %d %s", snum, enum, file.Name())
@@ -364,7 +366,6 @@ func (c *Collector) parseShowsDir(baseDir string, file fs.FileInfo) *Dir {
 	showsDir := &Dir{
 		Dir:          baseDir,
 		OriginTitle:  file.Name(),
-		MaxSeason:    1,
 		IsCollection: utils.IsCollection(file.Name()),
 	}
 

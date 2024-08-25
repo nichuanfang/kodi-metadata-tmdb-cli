@@ -9,6 +9,7 @@ import (
 	"fengqi/kodi-metadata-tmdb-cli/shows"
 	"fengqi/kodi-metadata-tmdb-cli/tmdb"
 	"fengqi/kodi-metadata-tmdb-cli/utils"
+	"fengqi/kodi-metadata-tmdb-cli/webdav"
 	"flag"
 	"fmt"
 	"runtime"
@@ -39,6 +40,7 @@ func main() {
 	tmdb.InitTmdb(c.Tmdb)
 	kodi.InitKodi(c.Kodi)
 	ffmpeg.InitFfmpeg(c.Ffmpeg)
+	webdav.InitWebDAV(c.WebDAV)
 
 	wg := &sync.WaitGroup{}
 	wg.Add(3)
