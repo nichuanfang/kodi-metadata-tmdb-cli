@@ -73,7 +73,7 @@ func (c *Collector) watchDir(name string) {
 	if err != nil {
 		// 尝试5秒后重试
 		time.Sleep(5 * time.Second)
-		err := watcher.Add(name)
+		err = watcher.Add(name)
 		if err != nil {
 			utils.Logger.FatalF("add movies dir: %s to watcher err: %v", name, err)
 		}

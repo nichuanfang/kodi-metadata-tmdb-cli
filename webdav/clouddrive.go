@@ -3,6 +3,7 @@ package webdav
 import (
 	"fengqi/kodi-metadata-tmdb-cli/config"
 	"fengqi/kodi-metadata-tmdb-cli/utils"
+	"time"
 
 	"github.com/studio-b12/gowebdav"
 )
@@ -31,8 +32,11 @@ func InitWebDAV(config *config.WebDAVConfig) {
 	client = gowebdav.NewClient(url, user, pass)
 	err := client.Connect()
 	if err != nil {
-		utils.Logger.Error("webdav连接失败!请检查用户名密码是否正确")
-		return
+		time.Sleep(5 * time.Second)
+		err = client.Connect()
+		if err != nil {
+			utils.Logger.Error("webdav连接失败!请检查用户名密码是否正确")
+		}
 	}
 }
 
