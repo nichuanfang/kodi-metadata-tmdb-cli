@@ -2,9 +2,11 @@ package movies
 
 import (
 	"fengqi/kodi-metadata-tmdb-cli/utils"
-	"github.com/fsnotify/fsnotify"
 	"os"
 	"path/filepath"
+	"time"
+
+	"github.com/fsnotify/fsnotify"
 )
 
 var watcher *fsnotify.Watcher
@@ -69,6 +71,11 @@ func (c *Collector) watchDir(name string) {
 
 	err := watcher.Add(name)
 	if err != nil {
-		utils.Logger.FatalF("add movies dir: %s to watcher err: %v", name, err)
+		// 尝试5秒后重试
+		time.Sleep(5 * time.Second)
+		err := watcher.Add(name)
+		if err != nil {
+			utils.Logger.FatalF("add movies dir: %s to watcher err: %v", name, err)
+		}
 	}
 }

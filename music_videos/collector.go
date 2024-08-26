@@ -60,7 +60,7 @@ func (c *Collector) videoProcessor(video *MusicVideo) {
 
 	probe, err := video.getProbe()
 	if err != nil {
-		utils.Logger.WarningF("parse video %s probe err: %v", video.Dir+"/"+video.OriginTitle, err)
+		utils.Logger.WarningF("parse video %s probe err: %v", filepath.Join(video.Dir, video.OriginTitle), err)
 		return
 	}
 
@@ -99,7 +99,7 @@ func (c *Collector) runScanner() {
 			}
 
 			// 刮削信息缓存目录
-			cacheDir := item + "/tmdb"
+			cacheDir := filepath.Join(item, "tmdb")
 			if _, err := os.Stat(cacheDir); err != nil && os.IsNotExist(err) {
 				err := os.Mkdir(cacheDir, 0755)
 				if err != nil {
@@ -151,9 +151,9 @@ func (c *Collector) scanDir(dir string) ([]*MusicVideo, error) {
 				continue
 			}
 
-			c.watchDir(dir + "/" + file.Name())
+			c.watchDir(filepath.Join(dir, file.Name()))
 
-			subVideos, err := c.scanDir(dir + "/" + file.Name())
+			subVideos, err := c.scanDir(filepath.Join(dir, file.Name()))
 			if err != nil {
 				continue
 			}

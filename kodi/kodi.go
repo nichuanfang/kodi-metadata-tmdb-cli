@@ -39,6 +39,7 @@ func InitKodi(config *config.KodiConfig) {
 		Timeout:   time.Duration(config.Timeout) * time.Second,
 		Transport: &http.Transport{},
 	}
+
 }
 
 func (r *JsonRpc) Ping() bool {

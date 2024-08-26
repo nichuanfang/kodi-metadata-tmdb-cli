@@ -8,18 +8,19 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"path/filepath"
 )
 
 func (m *MusicVideo) getFullPath() string {
-	return m.Dir + "/" + m.OriginTitle
+	return filepath.Join(m.Dir, m.OriginTitle)
 }
 
 func (m *MusicVideo) getNfoThumb() string {
-	return m.Dir + "/" + m.Title + "-thumb.jpg"
+	return filepath.Join(m.Dir, m.Title+"-thumb.jpg")
 }
 
 func (m *MusicVideo) getNfoFile() string {
-	return m.Dir + "/" + m.Title + ".nfo"
+	return filepath.Join(m.Dir, m.Title+".nfo")
 }
 
 func (m *MusicVideo) NfoExist() bool {
@@ -46,7 +47,7 @@ func (m *MusicVideo) getProbe() (*ffmpeg.ProbeData, error) {
 	var probe = new(ffmpeg.ProbeData)
 
 	fileMd5 := m.GetNameMd5()
-	cacheFile := m.BaseDir + "/tmdb/" + fileMd5 + ".json"
+	cacheFile := filepath.Join(m.BaseDir, "tmdb", fileMd5+".json")
 	if _, err := os.Stat(cacheFile); err == nil {
 		utils.Logger.DebugF("get video probe from cache: %s", cacheFile)
 		if bytes, err := os.ReadFile(cacheFile); err == nil {
@@ -57,7 +58,7 @@ func (m *MusicVideo) getProbe() (*ffmpeg.ProbeData, error) {
 	}
 
 	// 保存缓存
-	probe, err := ffmpeg.Probe(m.Dir + "/" + m.OriginTitle)
+	probe, err := ffmpeg.Probe(filepath.Join(m.Dir, m.OriginTitle))
 	if err == nil {
 		utils.Logger.DebugF("save video probe to cache: %s", cacheFile)
 		f, err := os.OpenFile(cacheFile, os.O_WRONLY|os.O_TRUNC|os.O_CREATE, 0644)

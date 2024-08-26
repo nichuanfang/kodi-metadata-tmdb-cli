@@ -65,7 +65,7 @@ func (m *MusicVideo) drawThumb() error {
 	filename := m.getFullPath()
 	thumb := m.getNfoThumb()
 	for _, i := range ThumbImagesFormat {
-		check := m.Dir + "/" + m.Title + "." + i
+		check := filepath.Join(m.Dir, m.Title+"."+i)
 		if utils.FileExist(check) {
 			n, err := utils.CopyFile(check, thumb)
 			if n > 0 && err == nil {
