@@ -49,7 +49,9 @@ func (c *Collector) runMoviesProcess() {
 			err = dir.downloadImage(detail)
 			moviesStorageDir := c.config.Collector.MoviesStorageDir
 			if err == nil && moviesStorageDir != "" {
-				err = dir.MoveToStorage(moviesStorageDir, detail.BelongsToCollection.Name, fmt.Sprintf("%s (%s)", detail.Title, strings.SplitN(detail.ReleaseDate, "-", 2)[0]))
+				err = dir.MoveToStorage(moviesStorageDir, detail.BelongsToCollection.Name, fmt.Sprintf("%s (%s)",
+					utils.SanitizeFileName(detail.Title),
+					strings.SplitN(detail.ReleaseDate, "-", 2)[0]))
 				if err != nil {
 					utils.Logger.ErrorF("移动电影: %s 到存储目录失败: %v", dir.OriginTitle, err)
 				}

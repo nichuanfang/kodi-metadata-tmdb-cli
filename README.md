@@ -24,6 +24,11 @@
 > 本程序必须和下载软件（如 Transmission、µTorrent 等）运行在同一个环境，不然实时监听模式不生效。
 > 详细配置参考 [配置总览](https://github.com/fengqi/kodi-metadata-tmdb-cli/wiki/%E9%85%8D%E7%BD%AE%E6%96%87%E4%BB%B6)
 
+# 注意事项
+
+-   升级`clouddrive2`或者正常开机后手动重启`clouddrive2`会导致监听的目录自动移除 需要重新启动刮削器来触发监听
+-   需要配置 webdav 来保证剧集合集正常刮削
+
 # 功能列表
 
 -   [x] 从 TMDB 获取电视剧、电视剧分集、电视剧合集、电视剧剧集组、电影、电影合集信息

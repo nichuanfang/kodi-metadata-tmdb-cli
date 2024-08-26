@@ -44,7 +44,7 @@
         "music_videos_storage_dir": "/volume1/down/music_videos"
     },
     "kodi": {
-        "enable": true,
+        "enable": false,
         "clean_library": false,
         "json_rpc": "http://192.168.1.123:8080/jsonrpc",
         "timeout": 1,

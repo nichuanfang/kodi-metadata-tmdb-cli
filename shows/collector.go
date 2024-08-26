@@ -132,7 +132,7 @@ func (c *Collector) showsDirProcess() {
 				if detail.FirstAirDate != "" {
 					firstAirDate = strings.SplitN(detail.FirstAirDate, "-", 2)[0]
 				}
-				err = dir.MoveToStorage(showsStorageDir, fmt.Sprintf("%s (%s)", detail.Name, firstAirDate), dir.Season)
+				err = dir.MoveToStorage(showsStorageDir, fmt.Sprintf("%s (%s)", utils.SanitizeFileName(detail.Name), firstAirDate), dir.Season)
 				if err != nil {
 					utils.Logger.Error(err.Error())
 					return
