@@ -7,7 +7,7 @@
 # 怎么使用
 
 1. 打开 Kodi 设置 - 媒体 - 视频 - 更改内容（仅限电影和剧集类型） - 信息提供者改为：Local information only
-2. 根据平台[下载](https://github.com/fengqi/kodi-metadata-tmdb-cli/releases)对应的文件，配置 `config.json`并后台运行。
+2. 根据平台[下载](https://github.com/nichuanfang/kodi-metadata-tmdb-cli/releases)对应的文件，配置 `config.json`并后台运行。
 3. 按照以下结构组织媒体库
 
     ```shell
