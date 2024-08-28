@@ -280,8 +280,8 @@ func postProcess(d *Dir, tmdbShowName string, seasonCount int) error {
 			if err != nil {
 				return err
 			}
-			utils.Logger.InfoF("移动剧集: %s 存储目录成功!", tmdbShowName)
 		}
 	}
+	utils.Logger.InfoF("移动剧集: %s 存储目录成功!", tmdbShowName)
 	return nil
 }
