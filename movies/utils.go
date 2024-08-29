@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fengqi/kodi-metadata-tmdb-cli/tmdb"
 	"fengqi/kodi-metadata-tmdb-cli/utils"
+	"fengqi/kodi-metadata-tmdb-cli/webdav"
 	"fmt"
 	"io/fs"
 	"os"
@@ -332,7 +333,8 @@ func (m *Movie) MoveToStorage(moviesStorageDir string, collection string, tmdbNa
 		os.Rename(filepath.Join(oldPathDir, sub), filepath.Join(newMovieDir, movieVideoName+filepath.Ext(sub)))
 	}
 	// 移除整个源电影文件夹
-	os.RemoveAll(oldPathDir)
+	webdav.RemoveMovie(m.OriginTitle)
+	// os.RemoveAll(oldPathDir)
 	utils.Logger.InfoF("移动电影: %s 到存储目录成功!", m.OriginTitle)
 	return nil
 }
