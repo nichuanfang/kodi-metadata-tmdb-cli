@@ -127,7 +127,7 @@ func (c *Collector) showsDirProcess() {
 					c.showsFileProcess(detail.OriginalName, subFile)
 				}
 			}
-			if showsStorageDir != "" {
+			if c.config.Collector.MoveToStorage && showsStorageDir != "" {
 				firstAirDate := ""
 				if detail.FirstAirDate != "" {
 					firstAirDate = strings.SplitN(detail.FirstAirDate, "-", 2)[0]

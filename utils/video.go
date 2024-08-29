@@ -132,6 +132,7 @@ var (
 	seasonRangeMatch   *regexp.Regexp
 	partMatch          *regexp.Regexp
 	numberMatch        *regexp.Regexp
+	subtitleMatch      *regexp.Regexp
 )
 
 func init() {
@@ -171,6 +172,7 @@ func init() {
 	seasonRangeMatch, _ = regexp.Compile("[sS](0|)[0-9]+-[sS](0|)[0-9]+")
 	partMatch, _ = regexp.Compile("(:?.|-|_| |@)[pP]art([0-9])(:?.|-|_| |@)")
 	numberMatch, _ = regexp.Compile("([0-9]+).+$")
+	subtitleMatch, _ = regexp.Compile(`(.*)\.(srt|ass|ssa)$`)
 }
 
 // IsCollection 是否是合集，如S01-S03季
@@ -469,4 +471,13 @@ func MatchPart(name string) int {
 		}
 	}
 	return 0
+}
+
+// 匹配字幕文件
+func MatchSubtitle(name string) bool {
+	find := subtitleMatch.FindStringSubmatch(name)
+	if len(find) == 0 {
+		return false
+	}
+	return true
 }

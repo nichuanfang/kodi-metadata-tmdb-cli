@@ -52,6 +52,7 @@ type CollectorConfig struct {
 	CronSeconds           int      `json:"cron_seconds"`             // 定时扫描频率
 	SkipFolders           []string `json:"skip_folders"`             // 跳过的目录，可多个
 	MoviesNfoMode         int      `json:"movies_nfo_mode"`          // 电影NFO写入模式：1 movie.nfo，2 <VideoFileName>.nfo
+	MoveToStorage         bool     `json:"move_to_storage"`          //刮削后是否需要迁移到存储目录
 	MoviesDir             []string `json:"movies_dir"`               // 需要监听的电影文件根目录，可多个
 	MoviesStorageDir      string   `json:"movies_storage_dir"`       //刮削后实际存放电影的文件夹, 仅为一个
 	ShowsDir              []string `json:"shows_dir"`                // 需要监听的电视剧文件根目录，可多个

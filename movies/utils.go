@@ -1,8 +1,10 @@
 package movies
 
 import (
+	"errors"
 	"fengqi/kodi-metadata-tmdb-cli/tmdb"
 	"fengqi/kodi-metadata-tmdb-cli/utils"
+	"fmt"
 	"io/fs"
 	"os"
 	"path/filepath"
@@ -279,24 +281,58 @@ func (m *Movie) MoveToStorage(moviesStorageDir string, collection string, tmdbNa
 	oldPathDir := filepath.Join(m.Dir, m.OriginTitle)
 	// 新文件夹
 	newMovieDir := filepath.Join(moviesStorageDir, collection, tmdbName)
-	//电影集文件夹
-	collectionDir := filepath.Join(moviesStorageDir, collection)
-	if _, err := os.Stat(collectionDir); err != nil && os.IsNotExist(err) {
+	if _, err := os.Stat(newMovieDir); err != nil && os.IsNotExist(err) {
 		// 电影集文件夹不存在 则新建
-		os.MkdirAll(collectionDir, 0755)
-	}
-	if _, err := os.Stat(newMovieDir); err == nil {
-		// 新电影文件夹如果存在则删除 覆盖策略
-		err := os.RemoveAll(newMovieDir)
-		if err != nil {
-			return err
+		os.MkdirAll(newMovieDir, 0755)
+	} else {
+		if _, err := os.Stat(newMovieDir); err == nil {
+			// 新电影文件夹如果存在则删除 覆盖策略
+			err := os.RemoveAll(newMovieDir)
+			if err != nil {
+				return err
+			}
+			os.MkdirAll(newMovieDir, 0755)
 		}
 	}
-	// 尝试移动文件夹
-	err := os.Rename(oldPathDir, newMovieDir)
-	// 移除旧文件夹
-	if err == nil {
-		utils.Logger.InfoF("移动电影: %s 到存储目录成功!", m.OriginTitle)
+	dirEntry, _ := os.ReadDir(oldPathDir)
+	//字幕数组
+	subtitles := make([]string, 0)
+	// 最大的电影文件名
+	var maxMovieVideo fs.FileInfo
+	for _, entry := range dirEntry {
+		if !entry.IsDir() {
+			// 匹配字幕
+			if utils.MatchSubtitle(entry.Name()) {
+				subtitles = append(subtitles, entry.Name())
+			} else if utils.IsVideo(entry.Name()) != "" {
+				//电影文件 记录最大的一个文件
+				//获取视频文件大小
+				fs, _ := entry.Info()
+				if maxMovieVideo == nil || (fs.Size() > maxMovieVideo.Size()) {
+					maxMovieVideo = fs
+				}
+			} else {
+				// 直接移动
+				os.Rename(filepath.Join(oldPathDir, entry.Name()), filepath.Join(newMovieDir, entry.Name()))
+			}
+		} else {
+			// 直接移动
+			os.Rename(filepath.Join(oldPathDir, entry.Name()), filepath.Join(newMovieDir, entry.Name()))
+		}
 	}
-	return err
+	if maxMovieVideo == nil {
+		os.RemoveAll(newMovieDir)
+		return errors.New(fmt.Sprintf("电影目录: %s未找到任何视频文件!", m.OriginTitle))
+	}
+	// 处理最大的视频文件移动 以及 字幕文件重命名
+	os.Rename(filepath.Join(oldPathDir, maxMovieVideo.Name()), filepath.Join(newMovieDir, maxMovieVideo.Name()))
+	movieVideoName := strings.TrimSuffix(maxMovieVideo.Name(), filepath.Ext(maxMovieVideo.Name()))
+	for _, sub := range subtitles {
+		//外挂字幕
+		os.Rename(filepath.Join(oldPathDir, sub), filepath.Join(newMovieDir, movieVideoName+filepath.Ext(sub)))
+	}
+	// 移除整个源电影文件夹
+	os.RemoveAll(oldPathDir)
+	utils.Logger.InfoF("移动电影: %s 到存储目录成功!", m.OriginTitle)
+	return nil
 }

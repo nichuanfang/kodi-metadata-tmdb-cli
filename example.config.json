@@ -30,6 +30,7 @@
             "metadata"
         ],
         "movies_nfo_mode": 1,
+        "move_to_storage": true,
         "movies_dir": [
             "/volume1/down/movies"
         ],

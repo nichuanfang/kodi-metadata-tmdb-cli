@@ -48,7 +48,7 @@ func (c *Collector) runMoviesProcess() {
 			}
 			err = dir.downloadImage(detail)
 			moviesStorageDir := c.config.Collector.MoviesStorageDir
-			if err == nil && moviesStorageDir != "" {
+			if c.config.Collector.MoveToStorage && err == nil && moviesStorageDir != "" {
 				err = dir.MoveToStorage(moviesStorageDir, detail.BelongsToCollection.Name, fmt.Sprintf("%s (%s)",
 					utils.SanitizeFileName(detail.Title),
 					strings.SplitN(detail.ReleaseDate, "-", 2)[0]))
