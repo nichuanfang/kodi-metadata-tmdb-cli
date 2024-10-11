@@ -1,9 +1,10 @@
 package webdav
 
 import (
+	"time"
+
 	"fengqi/kodi-metadata-tmdb-cli/config"
 	"fengqi/kodi-metadata-tmdb-cli/utils"
-	"time"
 
 	"github.com/studio-b12/gowebdav"
 )
